@@ -69,12 +69,12 @@ exact_max_results_per_paper = 10
 snippet_words = 300
 
 [query_expansion]
-enabled = false
+enabled = true
 provider = "openai_compatible"
 base_url = "http://127.0.0.1:11434/v1"
-model = ""
+model = "qwen2.5-coder:1.5b"
 api_key_env = "PAPERS_MCP_EXPANSION_API_KEY"
-timeout_seconds = 20
+timeout_seconds = 10
 
 [mcp]
 max_top_k = 20

@@ -13,6 +13,7 @@ Turn any folder of research PDFs into an indexed, queryable academic corpus with
 ## Key Features
 
 * **Advanced Hybrid Retrieval Pipeline**:
+  * **Multi-Query Expansion**: Pre-configured with local Ollama (`qwen2.5-coder:1.5b`) to automatically expand queries into synonyms, technical variants, and formal academic phrasing with zero query drift.
   * **Lexical Search**: SQLite FTS5 BM25 with query normalization and phrase matching.
   * **Dense Semantic Search**: `Qwen/Qwen3-Embedding-4B` (2048-token context, bfloat16, MPS/CUDA accelerated).
   * **Reciprocal Rank Fusion (RRF)**: Combines dense and lexical candidate pools ($k=60$).
