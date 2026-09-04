@@ -1,0 +1,84 @@
+[paths]
+pdf_roots = ["./papers"]
+generated_markdown = "./data/markdown"
+cards = "./data/cards"
+database = "./data/papers.db"
+human_index = "./INDEX.md"
+exclude_dirs = [
+  ".git",
+  ".venv",
+  "data",
+  "data/markdown",
+  "data/cards",
+  "src",
+  "tests",
+]
+markdown_sources_from_index = true
+
+[extraction]
+providers = ["pymupdf4llm", "pymupdf"]
+marker_command = "marker_single"
+page_markers = true
+ocr = true
+
+[models.embedding]
+backend = "sentence_transformers"
+model = "Qwen/Qwen3-Embedding-4B"
+revision = "5cf2132abc99cad020ac570b19d031efec650f2b"
+device = "auto"
+precision = "bfloat16"
+quantization = false
+batch_size = 1
+max_length = 2048
+allow_explicit_hash_fallback = true
+fallback_dimensions = 768
+query_instruction = """Retrieve academic material relevant to the research query. Pay particular attention to mathematical formulations, empirical claims, assumptions, algorithms, definitions, and experimental evaluations. Distinguish between closely related methods."""
+
+[models.reranker]
+backend = "sentence_transformers"
+model = "Qwen/Qwen3-Reranker-4B"
+revision = "22e683669bc0f0bd69640a1354a6d0aebcfeede5"
+device = "auto"
+precision = "bfloat16"
+quantization = false
+batch_size = 1
+max_length = 2048
+allow_explicit_lexical_fallback = true
+instruction = """Judge whether the document contains substantive technical material that directly answers the research query. Prefer exact formulations, methodologies, definitions, and results over superficial keyword overlap."""
+
+[resources]
+max_process_memory_gb = 45
+mps_memory_limit_gb = 24
+extraction_worker_timeout_seconds = 120
+release_memory_after_batch = true
+
+[chunks]
+target_tokens = 850
+min_tokens = 250
+max_tokens = 1600
+
+[retrieval]
+bm25_candidates = 60
+dense_candidates = 60
+rerank_candidates = 40
+rrf_k = 60
+default_top_k = 10
+precision_max_results_per_paper = 3
+discovery_max_results_per_paper = 2
+exact_max_results_per_paper = 10
+snippet_words = 300
+
+[query_expansion]
+enabled = false
+provider = "openai_compatible"
+base_url = "http://127.0.0.1:11434/v1"
+model = ""
+api_key_env = "PAPERS_MCP_EXPANSION_API_KEY"
+timeout_seconds = 20
+
+[mcp]
+max_top_k = 20
+max_section_tokens = 12000
+
+[logging]
+level = "INFO"
