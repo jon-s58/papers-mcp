@@ -440,7 +440,7 @@ def test_serve_mcp_runs_server_without_polluting_stdout(
         "ResearchCorpus",
         lambda *_args: (_ for _ in ()).throw(AssertionError("must not construct corpus")),
     )
-    assert cli.main(["serve-mcp"]) == 0
+    assert cli.main(["serve-mcp", "--standalone"]) == 0
     assert capsys.readouterr().out == ""
     assert calls == [{"config_path": config.config_path}, "run"]
 

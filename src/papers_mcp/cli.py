@@ -137,7 +137,17 @@ def build_parser() -> argparse.ArgumentParser:
     evaluation.add_argument("--top-k", type=_positive_int, default=10)
     evaluation.add_argument("--json", dest="json_output", action="store_true")
 
-    subparsers.add_parser("serve-mcp", help="run the seven-tool MCP server over stdio")
+    serve_mcp = subparsers.add_parser(
+        "serve",
+        aliases=["serve-mcp"],
+        help="run the seven-tool MCP server (uses shared daemon by default)",
+    )
+    serve_mcp.add_argument(
+        "--standalone",
+        action="store_true",
+        help="run in-process standalone server without using the shared daemon",
+    )
+    subparsers.add_parser("daemon", help="run the persistent shared MCP daemon process")
     return parser
 
 
@@ -345,10 +355,20 @@ def _run_command(args: argparse.Namespace, config: AppConfig) -> int:
         _print_json(report) if args.json_output else _print_ingest(report)
         return 1 if getattr(report, "failed", 0) else 0
 
-    if args.command == "serve-mcp":
-        # Stdout is the MCP stdio transport. Never print status text in this branch.
-        build_mcp_server(config_path=config.config_path).run()
+    if args.command == "daemon":
+        from .daemon import run_daemon
+
+        run_daemon(config_path=config.config_path)
         return 0
+
+    if args.command in ("serve", "serve-mcp"):
+        # Stdout is the MCP stdio transport. Never print status text in this branch.
+        if getattr(args, "standalone", False):
+            build_mcp_server(config_path=config.config_path).run()
+            return 0
+        from .proxy import run_stdio_proxy
+
+        return run_stdio_proxy(config_path=config.config_path)
 
     with ResearchCorpus(config) as corpus:
         if args.command == "search":
