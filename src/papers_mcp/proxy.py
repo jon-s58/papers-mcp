@@ -26,12 +26,13 @@ def ensure_daemon_running(
         except (ConnectionRefusedError, OSError):
             socket_path.unlink(missing_ok=True)
 
-    cmd = [sys.executable, "-m", "papers_mcp.cli"]
+    cmd = [sys.executable, "-m", "papers_mcp"]
     if config_path:
         cmd.extend(["--config", str(config_path)])
     cmd.append("daemon")
 
     env = dict(os.environ)
+    env["PAPERS_MCP_SOCKET"] = str(socket_path)
     subprocess.Popen(
         cmd,
         stdout=subprocess.DEVNULL,
@@ -42,7 +43,7 @@ def ensure_daemon_running(
         env=env,
     )
 
-    deadline = time.time() + 20.0
+    deadline = time.time() + 45.0
     while time.time() < deadline:
         if socket_path.exists():
             try:

@@ -17,7 +17,8 @@ from .service import ResearchCorpus
 
 LOGGER = logging.getLogger(__name__)
 
-DEFAULT_SOCKET_PATH = Path("/tmp/papers-mcp.sock")
+DEFAULT_SOCKET_PATH = Path.home() / ".papers-mcp" / "daemon.sock"
+LEGACY_SOCKET_PATH = Path("/tmp/papers-mcp.sock")
 
 
 def get_default_socket_path() -> Path:
@@ -102,10 +103,21 @@ class MCPDaemon:
                 self.socket_path.unlink(missing_ok=True)
 
         self.socket_path.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            os.chmod(self.socket_path.parent, 0o700)
+        except OSError:
+            pass
         server = await asyncio.start_unix_server(
             self.handle_client, path=str(self.socket_path)
         )
         os.chmod(self.socket_path, 0o600)
+        try:
+            if LEGACY_SOCKET_PATH != self.socket_path:
+                if LEGACY_SOCKET_PATH.is_symlink() or LEGACY_SOCKET_PATH.exists():
+                    LEGACY_SOCKET_PATH.unlink(missing_ok=True)
+                LEGACY_SOCKET_PATH.symlink_to(self.socket_path)
+        except OSError:
+            pass
         LOGGER.info("Papers MCP Daemon listening on %s", self.socket_path)
         self._running = True
 
@@ -117,8 +129,17 @@ def run_daemon(config_path: str | os.PathLike[str] | None = None) -> None:
     config = load_config(config_path) if config_path else load_config()
     daemon = MCPDaemon(config)
 
+    def _cleanup():
+        if daemon._running:
+            daemon.socket_path.unlink(missing_ok=True)
+            try:
+                if LEGACY_SOCKET_PATH.is_symlink():
+                    LEGACY_SOCKET_PATH.unlink(missing_ok=True)
+            except OSError:
+                pass
+
     def _sig_handler(*_):
-        daemon.socket_path.unlink(missing_ok=True)
+        _cleanup()
         sys.exit(0)
 
     signal.signal(signal.SIGINT, _sig_handler)
@@ -127,4 +148,4 @@ def run_daemon(config_path: str | os.PathLike[str] | None = None) -> None:
     try:
         asyncio.run(daemon.serve())
     finally:
-        daemon.socket_path.unlink(missing_ok=True)
+        _cleanup()
